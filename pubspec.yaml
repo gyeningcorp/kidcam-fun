@@ -1,0 +1,65 @@
+name: kidcam_fun
+description: A kid-friendly, privacy-first face filter camera app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Camera
+  camera: ^0.10.5+9
+
+  # Face Detection (on-device, no API key needed)
+  google_mlkit_face_detection: ^0.9.0
+
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+
+  # Local Storage
+  path_provider: ^2.1.2
+  flutter_secure_storage: ^9.0.0
+  sqflite: ^2.3.2
+
+  # Photo Library Export (parent-gated only)
+  image_gallery_saver: ^2.0.3
+
+  # Audio (local assets only)
+  audioplayers: ^6.0.0
+
+  # Animations
+  rive: ^0.12.4
+  flutter_animate: ^4.5.0
+
+  # Utils
+  uuid: ^4.3.3
+  intl: ^0.18.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  riverpod_generator: ^2.3.9
+  build_runner: ^2.4.8
+  mockito: ^5.4.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/filters/
+    - assets/sounds/
+    - assets/animations/
+    - assets/fonts/
+
+  fonts:
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-ExtraBold.ttf
+          weight: 800
