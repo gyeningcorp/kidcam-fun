@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>KidCam Fun</title>
+<title>Funny Faces</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:#000;width:100%;height:100%;overflow:hidden;font-family:-apple-system,sans-serif;touch-action:none;}
@@ -53,7 +53,7 @@ html,body{background:#000;width:100%;height:100%;overflow:hidden;font-family:-ap
 <!-- Splash: tap anywhere to start camera (required for iOS) -->
 <div id="splash">
   <div id="splash-icon">🎭</div>
-  <h1>KidCam Fun</h1>
+  <h1>Funny Faces</h1>
   <p id="splash-msg">Smile and watch the magic happen!</p>
   <button id="splash-btn" onclick="boot()" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;">📷 Start Camera</button>
 </div>
@@ -265,7 +265,7 @@ let sx=0;
 V.addEventListener('touchstart',e=>sx=e.touches[0].clientX);
 V.addEventListener('touchend',e=>{const d=sx-e.changedTouches[0].clientX;if(Math.abs(d)>40){pick(d>0?Math.min(AI+1,FILTERS.length-1):Math.max(AI-1,0));build();}});
 function snap(){document.getElementById('flash').style.opacity='1';setTimeout(()=>document.getElementById('flash').style.opacity='0',120);const cap=document.createElement('canvas');cap.width=V.videoWidth||C.width;cap.height=V.videoHeight||C.height;const cc=cap.getContext('2d');cc.save();cc.translate(cap.width,0);cc.scale(-1,1);cc.drawImage(V,0,0,cap.width,cap.height);cc.restore();cc.scale(cap.width/C.width,cap.height/C.height);const f=FILTERS[AI];if(f.draw)f.draw(cc);document.getElementById('prev-img').src=cap.toDataURL('image/jpeg',.92);CAP=cap;document.getElementById('preview').style.display='flex';addFX(C.width/2,C.height*.5,'🎉');}
-function savePhoto(){if(!CAP)return;const a=document.createElement('a');a.download=`kidcam-${Date.now()}.jpg`;a.href=CAP.toDataURL('image/jpeg',.92);a.click();}
+function savePhoto(){if(!CAP)return;const a=document.createElement('a');a.download=`funnyfaces-${Date.now()}.jpg`;a.href=CAP.toDataURL('image/jpeg',.92);a.click();}
 function closePreview(){document.getElementById('preview').style.display='none';CAP=null;}
 </script>
 </body>
