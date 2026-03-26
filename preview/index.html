@@ -55,7 +55,8 @@ html,body{background:#000;width:100%;height:100%;overflow:hidden;font-family:-ap
   <div id="splash-icon">🎭</div>
   <h1>KidCam Fun</h1>
   <p id="splash-msg">Smile and watch the magic happen!</p>
-  <button id="splash-btn" onclick="boot()" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;">📷 Start Camera</button>
+  <button id="splash-btn" onclick="boot()" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;margin-top:8px;">📷 Start Camera</button>
+  <a id="open-safari" href="" style="display:none;margin-top:20px;color:#4FC3F7;font-size:.9rem;font-weight:700;text-decoration:underline;" target="_blank">🌐 Open in Safari instead →</a>
 </div>
 
 <div id="loading"><div style="font-size:2.5rem">🎭</div><div class="spin"></div><p style="font-size:.9rem;color:rgba(255,255,255,.6)">Opening camera...</p></div>
@@ -206,6 +207,21 @@ const FILTERS=[
 function addFX(x,y,e=null){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,s=2+Math.random()*3.5;FX.push({x:x+(Math.random()-.5)*80,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2.5,l:1,e:e||['✨','⭐','💫','🌟'][i%4],sz:14+Math.random()*22});}}
 function tickFX(){FX=FX.filter(f=>f.l>0);for(const f of FX){ctx.save();ctx.globalAlpha=f.l;em(ctx,f.e,f.x,f.y,f.sz);ctx.restore();f.x+=f.vx;f.y+=f.vy;f.vy+=.15;f.l-=.024;}}
 
+// Detect in-app browser (Telegram, Instagram, Facebook, etc.)
+(function(){
+  const ua=navigator.userAgent||'';
+  const isInApp=/\b(Telegram|Instagram|FBAN|FBAV|Line|MicroMessenger|Twitter|Snapchat|LinkedInApp)\b/i.test(ua);
+  const isIOS=/iPad|iPhone|iPod/.test(ua);
+  if(isInApp||(!window.safari&&isIOS&&!/^((?!chrome|android).)*safari/i.test(ua))){
+    const link=document.getElementById('open-safari');
+    link.href='https://gyeningcorp.github.io/kidcam-fun/';
+    link.style.display='block';
+    document.getElementById('splash-msg').textContent='This browser can\'t access your camera.';
+    document.getElementById('splash-msg').style.cssText='color:#FF6B6B;font-weight:700;font-size:1rem;text-align:center;padding:0 32px;';
+    document.getElementById('splash-btn').style.display='none';
+  }
+})();
+
 async function boot(){
   const splash=document.getElementById('splash');
   const loading=document.getElementById('loading');
@@ -245,11 +261,18 @@ async function boot(){
     loading.style.display='none';
     let msg='';
     if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
-      msg='⚠️ Camera blocked. Go to Settings → Safari → Camera → Allow, then reload this page.';
+      msg='⚠️ Camera blocked. Go to Settings → Safari → Camera → Allow, then reload.';
     } else if(e.name==='NotFoundError'){
       msg='⚠️ No camera found on this device.';
+    } else if(!navigator.mediaDevices){
+      msg='⚠️ Open this page in Safari — this browser can\'t access the camera.';
+      document.getElementById('open-safari').href='https://gyeningcorp.github.io/kidcam-fun/';
+      document.getElementById('open-safari').style.display='block';
+      document.getElementById('splash-btn').style.display='none';
     } else {
-      msg='⚠️ Could not open camera: '+e.name+'. Make sure you\'re using Safari and camera is allowed.';
+      msg='⚠️ Camera error ('+e.name+'). Open in Safari and allow camera access.';
+      document.getElementById('open-safari').href='https://gyeningcorp.github.io/kidcam-fun/';
+      document.getElementById('open-safari').style.display='block';
     }
     document.getElementById('splash-msg').textContent=msg;
     document.getElementById('splash-msg').style.cssText='color:#FF6B6B;font-size:.95rem;text-align:center;padding:0 32px;font-weight:600;';
