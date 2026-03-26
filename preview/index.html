@@ -219,10 +219,8 @@ async function boot(){
   }
 
   try{
-    STR=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:FACE,facingMode:{ideal:FACE},width:{ideal:1280},height:{ideal:720}},
-      audio:false
-    });
+    // Simple constraints — most compatible with iOS Safari
+    STR=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
     V.srcObject=STR;
     await new Promise((res,rej)=>{V.onloadedmetadata=res; setTimeout(rej,8000);});
     C.width=window.innerWidth; C.height=window.innerHeight;
@@ -245,11 +243,16 @@ async function boot(){
 
   }catch(e){
     loading.style.display='none';
-    let msg='Tap to try again.';
-    if(e.name==='NotAllowedError') msg='Camera permission denied. Please allow camera access in Settings, then tap to retry.';
-    else if(e.name==='NotFoundError') msg='No camera found on this device.';
-    else msg='Error: '+e.message+'. Tap to retry.';
+    let msg='';
+    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
+      msg='⚠️ Camera blocked. Go to Settings → Safari → Camera → Allow, then reload this page.';
+    } else if(e.name==='NotFoundError'){
+      msg='⚠️ No camera found on this device.';
+    } else {
+      msg='⚠️ Could not open camera: '+e.name+'. Make sure you\'re using Safari and camera is allowed.';
+    }
     document.getElementById('splash-msg').textContent=msg;
+    document.getElementById('splash-msg').style.cssText='color:#FF6B6B;font-size:.95rem;text-align:center;padding:0 32px;font-weight:600;';
     splash.style.display='flex';
   }
 }
