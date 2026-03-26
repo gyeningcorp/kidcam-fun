@@ -51,11 +51,11 @@ html,body{background:#000;width:100%;height:100%;overflow:hidden;font-family:-ap
 <body>
 
 <!-- Splash: tap anywhere to start camera (required for iOS) -->
-<div id="splash">
+<div id="splash" onclick="boot()">
   <div id="splash-icon">🎭</div>
   <h1>KidCam Fun</h1>
   <p id="splash-msg">Smile and watch the magic happen!</p>
-  <button id="splash-btn" onclick="boot()" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;margin-top:8px;">📷 Start Camera</button>
+  <button id="splash-btn" onclick="event.stopPropagation(); boot();" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;margin-top:8px;">📷 Start Camera</button>
   <a id="open-safari" href="" style="display:none;margin-top:20px;color:#4FC3F7;font-size:.9rem;font-weight:700;text-decoration:underline;" target="_blank">🌐 Open in Safari instead →</a>
 </div>
 
@@ -233,21 +233,23 @@ function tickFX(){FX=FX.filter(f=>f.l>0);for(const f of FX){ctx.save();ctx.globa
 })();
 
 async function boot(){
-  log("Starting boot sequence...");
-  const splash=document.getElementById('splash');
-  const loading=document.getElementById('loading');
-  splash.style.display='none';
-  loading.style.display='flex';
-  debugDiv.style.display='block'; // Make debug log visible immediately
+  try {
+    // Show the log immediately and verify the tap worked
+    const splash=document.getElementById('splash');
+    const loading=document.getElementById('loading');
+    splash.style.display='none';
+    loading.style.display='flex';
+    debugDiv.style.display='block'; 
+    
+    log("Starting boot sequence...");
+    
+    // Check if camera API exists
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+      log("Error: mediaDevices not supported. This browser may not have camera access.");
+      document.getElementById('splash-msg').textContent='Camera not supported in this browser. Try Chrome or Safari.';
+      loading.style.display='none'; splash.style.display='flex'; return;
+    }
 
-  // Check if camera API exists
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    log("Error: mediaDevices not supported. This browser may not have camera access.");
-    document.getElementById('splash-msg').textContent='Camera not supported in this browser. Try Chrome or Safari.';
-    loading.style.display='none'; splash.style.display='flex'; return;
-  }
-
-  try{
     log("Attempting to get user media (camera access)...");
     STR=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
     
@@ -306,6 +308,8 @@ async function boot(){
 
   }catch(e){
     log("Boot process failed completely: " + e.name + " - " + e.message);
+    alert("Camera Error: " + e.message); // FORCE an alert to ensure they see it if it totally crashes
+    
     loading.style.display='none';
     let msg='';
     if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
@@ -321,6 +325,7 @@ async function boot(){
     }
     document.getElementById('splash-msg').textContent=msg;
     document.getElementById('splash-msg').style.cssText='color:#FF6B6B;font-size:.95rem;text-align:center;padding:0 32px;font-weight:600;';
+    const splash=document.getElementById('splash');
     splash.style.display='flex';
   }
 }
