@@ -238,35 +238,44 @@ async function boot(){
   const loading=document.getElementById('loading');
   splash.style.display='none';
   loading.style.display='flex';
+  debugDiv.style.display='block'; // Make debug log visible immediately
 
   // Check if camera API exists
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
-    log("Error: mediaDevices not supported");
+    log("Error: mediaDevices not supported. This browser may not have camera access.");
     document.getElementById('splash-msg').textContent='Camera not supported in this browser. Try Chrome or Safari.';
     loading.style.display='none'; splash.style.display='flex'; return;
   }
 
   try{
-    log("Requesting camera access...");
-    // Simple constraints — most compatible with iOS Safari
+    log("Attempting to get user media (camera access)...");
     STR=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'},audio:false});
-    log("Camera access granted.");
+    
+    if (!STR) {
+      log("Error: navigator.mediaDevices.getUserMedia returned null stream.");
+      throw new Error("Failed to get media stream.");
+    }
+
+    log("Camera access granted. Attaching stream to video element.");
     V.srcObject=STR;
     
-    // Explicitly call play for iOS Safari
-    log("Waiting for video metadata...");
+    log("Waiting for video metadata to load...");
     await new Promise((res,rej)=>{
       V.onloadedmetadata=() => {
-        log("Metadata loaded.");
+        log("Video metadata loaded. Attempting to play video.");
         V.play().then(() => {
-          log("Video playing.");
+          log("Video playing successfully.");
           res();
         }).catch(e => {
-          log("Play error: " + e.name);
-          res(); // resolve anyway
+          log("Video play failed: " + e.name + " - " + e.message + ". Trying to resolve anyway for progressive enhancement.");
+          res(); // resolve anyway, as some browsers might not fully play but stream is available
         });
       };
-      setTimeout(() => rej(new Error("Timeout waiting for metadata")), 8000);
+      V.onerror = (e) => {
+        log("Video element error: " + (e.message || e.type));
+        rej(new Error("Video element encountered an error."));
+      };
+      setTimeout(() => rej(new Error("Timeout waiting for video metadata or play")), 8000);
     });
     
     C.width=window.innerWidth; C.height=window.innerHeight;
@@ -274,42 +283,39 @@ async function boot(){
 
     // Try MediaPipe (optional - falls back gracefully)
     try {
-      log("Initializing FaceMesh...");
+      log("Initializing FaceMesh (optional)...");
       if(typeof FaceMesh!=='undefined'&&typeof Camera!=='undefined'){
         const mf=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`});
         mf.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
         mf.onResults(r=>{LM=r.multiFaceLandmarks?.[0]||null;if(LM)expr();});
         MPC=new Camera(V,{onFrame:async()=>await mf.send({image:V}),width:640,height:480});
         MPC.start();
-        log("FaceMesh started.");
+        log("FaceMesh started successfully.");
       } else {
-        log("FaceMesh/Camera undefined - skipping tracking.");
+        log("FaceMesh/Camera API not detected - skipping face tracking.");
       }
     } catch(e) {
-      log("FaceMesh error: " + e.message);
+      log("FaceMesh initialization error: " + e.message);
     }
 
     loading.style.display='none';
     document.getElementById('top-ui').style.display='flex';
     document.getElementById('bottom-ui').style.display='block';
     build(); pick(AI); loop();
-    log("App ready.");
+    log("App ready. Displaying UI.");
 
   }catch(e){
-    log("Boot failed: " + e.name + " - " + e.message);
+    log("Boot process failed completely: " + e.name + " - " + e.message);
     loading.style.display='none';
     let msg='';
     if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){
       msg='⚠️ Camera blocked. Go to Settings → Safari → Camera → Allow, then reload.';
     } else if(e.name==='NotFoundError'){
       msg='⚠️ No camera found on this device.';
-    } else if(!navigator.mediaDevices){
-      msg='⚠️ Open this page in Safari — this browser can\'t access the camera.';
-      document.getElementById('open-safari').href='https://gyeningcorp.github.io/kidcam-fun/';
-      document.getElementById('open-safari').style.display='block';
-      document.getElementById('splash-btn').style.display='none';
+    } else if(e.message==="Failed to get media stream." || e.message==="Video element encountered an error.") {
+      msg='⚠️ Critical camera stream error. Please check camera access in device settings.';
     } else {
-      msg='⚠️ Camera error ('+e.name+'). Open in Safari and allow camera access.';
+      msg='⚠️ Camera error ('+e.name+'): '+e.message+'. Open in Safari and allow camera access.';
       document.getElementById('open-safari').href='https://gyeningcorp.github.io/kidcam-fun/';
       document.getElementById('open-safari').style.display='block';
     }
