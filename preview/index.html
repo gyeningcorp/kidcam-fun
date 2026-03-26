@@ -51,11 +51,11 @@ html,body{background:#000;width:100%;height:100%;overflow:hidden;font-family:-ap
 <body>
 
 <!-- Splash: tap anywhere to start camera (required for iOS) -->
-<div id="splash" onclick="boot()">
+<div id="splash">
   <div id="splash-icon">🎭</div>
   <h1>KidCam Fun</h1>
-  <p>Smile and watch the magic happen!</p>
-  <button id="splash-btn">📷 Start Camera</button>
+  <p id="splash-msg">Smile and watch the magic happen!</p>
+  <button id="splash-btn" onclick="boot()" style="font-size:1.2rem;padding:18px 56px;border-radius:50px;background:white;color:#000;border:none;font-weight:900;cursor:pointer;-webkit-appearance:none;">📷 Start Camera</button>
 </div>
 
 <div id="loading"><div style="font-size:2.5rem">🎭</div><div class="spin"></div><p style="font-size:.9rem;color:rgba(255,255,255,.6)">Opening camera...</p></div>
@@ -207,31 +207,50 @@ function addFX(x,y,e=null){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2
 function tickFX(){FX=FX.filter(f=>f.l>0);for(const f of FX){ctx.save();ctx.globalAlpha=f.l;em(ctx,f.e,f.x,f.y,f.sz);ctx.restore();f.x+=f.vx;f.y+=f.vy;f.vy+=.15;f.l-=.024;}}
 
 async function boot(){
-  document.getElementById('splash').style.display='none';
-  document.getElementById('loading').style.display='flex';
+  const splash=document.getElementById('splash');
+  const loading=document.getElementById('loading');
+  splash.style.display='none';
+  loading.style.display='flex';
+
+  // Check if camera API exists
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    document.getElementById('splash-msg').textContent='Camera not supported in this browser. Try Chrome or Safari.';
+    loading.style.display='none'; splash.style.display='flex'; return;
+  }
+
   try{
-    STR=await navigator.mediaDevices.getUserMedia({video:{facingMode:FACE,width:{ideal:1280},height:{ideal:720}},audio:false});
+    STR=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:FACE,facingMode:{ideal:FACE},width:{ideal:1280},height:{ideal:720}},
+      audio:false
+    });
     V.srcObject=STR;
-    await new Promise(r=>{V.onloadedmetadata=r;});
+    await new Promise((res,rej)=>{V.onloadedmetadata=res; setTimeout(rej,8000);});
     C.width=window.innerWidth; C.height=window.innerHeight;
-    // Try MediaPipe face mesh
+
+    // Try MediaPipe (optional - falls back gracefully)
     try{
-      if(typeof FaceMesh!=='undefined'){
+      if(typeof FaceMesh!=='undefined'&&typeof Camera!=='undefined'){
         const mf=new FaceMesh({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4/${f}`});
         mf.setOptions({maxNumFaces:1,refineLandmarks:false,minDetectionConfidence:.5,minTrackingConfidence:.5});
         mf.onResults(r=>{LM=r.multiFaceLandmarks?.[0]||null;if(LM)expr();});
-        if(typeof Camera!=='undefined'){MPC=new Camera(V,{onFrame:async()=>await mf.send({image:V}),width:640,height:480});MPC.start();}
+        MPC=new Camera(V,{onFrame:async()=>await mf.send({image:V}),width:640,height:480});
+        MPC.start();
       }
     }catch(e){}
-    document.getElementById('loading').style.display='none';
+
+    loading.style.display='none';
     document.getElementById('top-ui').style.display='flex';
     document.getElementById('bottom-ui').style.display='block';
     build(); pick(AI); loop();
+
   }catch(e){
-    document.getElementById('loading').style.display='none';
-    const s=document.getElementById('splash');
-    s.querySelector('p').textContent='Camera access denied. Tap to try again.';
-    s.style.display='flex';
+    loading.style.display='none';
+    let msg='Tap to try again.';
+    if(e.name==='NotAllowedError') msg='Camera permission denied. Please allow camera access in Settings, then tap to retry.';
+    else if(e.name==='NotFoundError') msg='No camera found on this device.';
+    else msg='Error: '+e.message+'. Tap to retry.';
+    document.getElementById('splash-msg').textContent=msg;
+    splash.style.display='flex';
   }
 }
 function loop(){C.width=window.innerWidth;C.height=window.innerHeight;ctx.clearRect(0,0,C.width,C.height);const f=FILTERS[AI];if(f.draw)f.draw(ctx);tickFX();requestAnimationFrame(loop);}
