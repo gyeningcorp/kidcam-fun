@@ -1,4 +1,4 @@
-name: Flutter Init — Generate Native Project
+name: Flutter Init — Generate Native Project + Web Preview
 
 on:
   workflow_dispatch:
@@ -6,6 +6,11 @@ on:
 jobs:
   flutter-create:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -36,18 +41,18 @@ jobs:
           flutter create \
             --org com.gogig \
             --project-name kidcam_fun \
-            --platforms ios,android \
+            --platforms ios,android,web \
             --description "KidCam Fun — kid-friendly face filter camera app. Safe by design." \
             kidcam_new
 
       - name: Merge scaffold into repo
         run: |
-          # Copy native platform folders
           cp -r /tmp/kidcam_new/android $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam_new/ios $GITHUB_WORKSPACE/
+          cp -r /tmp/kidcam_new/web $GITHUB_WORKSPACE/
           cp /tmp/kidcam_new/.gitignore $GITHUB_WORKSPACE/
 
-          # Restore our custom files (overwrite flutter defaults)
+          # Restore our custom files
           cp -r /tmp/kidcam-backup/lib $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam-backup/test $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam-backup/assets $GITHUB_WORKSPACE/ 2>/dev/null || true
@@ -57,23 +62,16 @@ jobs:
           cp /tmp/kidcam-backup/BLUEPRINT.md $GITHUB_WORKSPACE/
           cp /tmp/kidcam-backup/README.md $GITHUB_WORKSPACE/
 
-      - name: Update AndroidManifest.xml with camera + storage permissions
+      - name: Add camera permissions to AndroidManifest.xml
         run: |
-          cat > $GITHUB_WORKSPACE/android/app/src/main/AndroidManifest.xml << 'EOF'
+          cat > $GITHUB_WORKSPACE/android/app/src/main/AndroidManifest.xml << 'MANIFEST'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-              <!-- Camera permission — required for face filter functionality -->
               <uses-permission android:name="android.permission.CAMERA"/>
-              <!-- Storage permissions for saving photos (parent-gated) -->
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-                  android:maxSdkVersion="28"/>
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
-                  android:maxSdkVersion="32"/>
-              <!-- Android 13+ photo library access -->
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
               <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-              <!-- Camera feature declaration -->
               <uses-feature android:name="android.hardware.camera" android:required="true"/>
               <uses-feature android:name="android.hardware.camera.front" android:required="true"/>
-
               <application
                   android:label="KidCam Fun"
                   android:name="${applicationName}"
@@ -87,53 +85,65 @@ jobs:
                       android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
                       android:hardwareAccelerated="true"
                       android:windowSoftInputMode="adjustResize">
-                      <meta-data
-                          android:name="io.flutter.embedding.android.NormalTheme"
-                          android:resource="@style/NormalTheme"/>
+                      <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme"/>
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN"/>
                           <category android:name="android.intent.category.LAUNCHER"/>
                       </intent-filter>
                   </activity>
-                  <meta-data
-                      android:name="flutterEmbedding"
-                      android:value="2"/>
+                  <meta-data android:name="flutterEmbedding" android:value="2"/>
               </application>
-              <queries>
-                  <intent>
-                      <action android:name="android.intent.action.PROCESS_TEXT"/>
-                      <data android:mimeType="text/plain"/>
-                  </intent>
-              </queries>
           </manifest>
-          EOF
+          MANIFEST
 
-      - name: Update iOS Info.plist with camera usage descriptions
+      - name: Add camera permissions to iOS Info.plist
         run: |
-          # Add camera and photo library usage descriptions to Info.plist
-          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'KidCam Fun uses your camera for fun face filters! Everything stays on your device.'" $GITHUB_WORKSPACE/ios/Runner/Info.plist 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription 'KidCam Fun uses your camera for fun face filters! Everything stays on your device.'" $GITHUB_WORKSPACE/ios/Runner/Info.plist
+          python3 - << 'PYEOF'
+          import plistlib, os
 
-          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string 'Save your fun photos to your camera roll! Only available when a parent turns it on.'" $GITHUB_WORKSPACE/ios/Runner/Info.plist 2>/dev/null || \
-          /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryAddUsageDescription 'Save your fun photos to your camera roll! Only available when a parent turns it on.'" $GITHUB_WORKSPACE/ios/Runner/Info.plist
+          plist_path = os.path.join(os.environ['GITHUB_WORKSPACE'], 'ios/Runner/Info.plist')
+          with open(plist_path, 'rb') as f:
+              plist = plistlib.load(f)
 
-      - name: flutter pub get (validate pubspec)
+          plist['NSCameraUsageDescription'] = 'KidCam Fun uses your camera for fun face filters! Everything stays on your device.'
+          plist['NSPhotoLibraryAddUsageDescription'] = 'Save your fun photos to your camera roll! Only available when a parent turns it on.'
+          plist['NSMicrophoneUsageDescription'] = 'Microphone is used for voice-reactive effects in a future update.'
+
+          with open(plist_path, 'wb') as f:
+              plistlib.dump(plist, f)
+
+          print('Info.plist updated successfully')
+          PYEOF
+
+      - name: flutter pub get
         run: |
           cd $GITHUB_WORKSPACE
           flutter pub get
 
-      - name: Commit and push
+      - name: Build Flutter Web
+        run: |
+          cd $GITHUB_WORKSPACE
+          flutter build web --release --base-href "/kidcam-fun/"
+
+      - name: Commit native scaffold + web build
         run: |
           cd $GITHUB_WORKSPACE
           git config user.name "Rory (AI)"
           git config user.email "rory@gogig.app"
           git add .
-          git commit -m "feat: add Android + iOS native project scaffold
+          git commit -m "feat: full Flutter project — Android, iOS, Web
 
-          Generated via flutter create 3.27.4 with:
-          - Full android/ native project (Kotlin, Gradle 8)
-          - Full ios/ native project (Swift, CocoaPods ready)
-          - Camera + photo library permissions configured
-          - Kid-friendly permission descriptions
-          - Custom lib/, pubspec.yaml, assets preserved"
+          - android/ native project (Kotlin + Gradle 8)
+          - ios/ native project (Swift + CocoaPods)
+          - web/ Flutter web build
+          - Camera + photo permissions configured
+          - Kid-friendly permission descriptions in both platforms
+          - pub get validated (all deps resolve)"
           git push origin main
+
+      - name: Deploy web build to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          commit_message: "deploy: KidCam Fun web preview"
