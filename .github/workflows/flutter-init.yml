@@ -1,4 +1,4 @@
-name: Flutter Init — Generate Native Project + Web Preview
+name: Flutter Init — Generate Native Project
 
 on:
   workflow_dispatch:
@@ -8,8 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pages: write
-      id-token: write
 
     steps:
       - name: Checkout repo
@@ -34,6 +32,7 @@ jobs:
           cp analysis_options.yaml /tmp/kidcam-backup/ 2>/dev/null || true
           cp BLUEPRINT.md /tmp/kidcam-backup/
           cp README.md /tmp/kidcam-backup/
+          cp -r .github /tmp/kidcam-backup/
 
       - name: Create Flutter project scaffold
         run: |
@@ -41,7 +40,7 @@ jobs:
           flutter create \
             --org com.gogig \
             --project-name kidcam_fun \
-            --platforms ios,android,web \
+            --platforms ios,android \
             --description "KidCam Fun — kid-friendly face filter camera app. Safe by design." \
             kidcam_new
 
@@ -49,10 +48,7 @@ jobs:
         run: |
           cp -r /tmp/kidcam_new/android $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam_new/ios $GITHUB_WORKSPACE/
-          cp -r /tmp/kidcam_new/web $GITHUB_WORKSPACE/
           cp /tmp/kidcam_new/.gitignore $GITHUB_WORKSPACE/
-
-          # Restore our custom files
           cp -r /tmp/kidcam-backup/lib $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam-backup/test $GITHUB_WORKSPACE/
           cp -r /tmp/kidcam-backup/assets $GITHUB_WORKSPACE/ 2>/dev/null || true
@@ -61,6 +57,7 @@ jobs:
           cp /tmp/kidcam-backup/analysis_options.yaml $GITHUB_WORKSPACE/ 2>/dev/null || true
           cp /tmp/kidcam-backup/BLUEPRINT.md $GITHUB_WORKSPACE/
           cp /tmp/kidcam-backup/README.md $GITHUB_WORKSPACE/
+          cp -r /tmp/kidcam-backup/.github $GITHUB_WORKSPACE/
 
       - name: Add camera permissions to AndroidManifest.xml
         run: |
@@ -107,43 +104,23 @@ jobs:
 
           plist['NSCameraUsageDescription'] = 'KidCam Fun uses your camera for fun face filters! Everything stays on your device.'
           plist['NSPhotoLibraryAddUsageDescription'] = 'Save your fun photos to your camera roll! Only available when a parent turns it on.'
-          plist['NSMicrophoneUsageDescription'] = 'Microphone is used for voice-reactive effects in a future update.'
 
           with open(plist_path, 'wb') as f:
               plistlib.dump(plist, f)
-
-          print('Info.plist updated successfully')
+          print('Info.plist updated')
           PYEOF
 
-      - name: flutter pub get
-        run: |
-          cd $GITHUB_WORKSPACE
-          flutter pub get
-
-      - name: Build Flutter Web
-        run: |
-          cd $GITHUB_WORKSPACE
-          flutter build web --release --base-href "/kidcam-fun/"
-
-      - name: Commit native scaffold + web build
+      - name: Commit native scaffold
         run: |
           cd $GITHUB_WORKSPACE
           git config user.name "Rory (AI)"
           git config user.email "rory@gogig.app"
           git add .
-          git commit -m "feat: full Flutter project — Android, iOS, Web
+          git commit -m "feat: full Flutter mobile project — Android + iOS native scaffold
 
-          - android/ native project (Kotlin + Gradle 8)
-          - ios/ native project (Swift + CocoaPods)
-          - web/ Flutter web build
-          - Camera + photo permissions configured
-          - Kid-friendly permission descriptions in both platforms
-          - pub get validated (all deps resolve)"
+          Generated with flutter create 3.27.4:
+          - android/ (Kotlin, Gradle 8, camera permissions)
+          - ios/ (Swift, CocoaPods ready, camera + photo permissions)
+          - .gitignore for Flutter
+          - All Dart source code preserved"
           git push origin main
-
-      - name: Deploy web build to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build/web
-          commit_message: "deploy: KidCam Fun web preview"

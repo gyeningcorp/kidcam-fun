@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KidCam Fun — App Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  h1 {
+    color: white;
+    font-size: 2.5rem;
+    text-align: center;
+    margin: 30px 0 8px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .tagline {
+    color: rgba(255,255,255,0.85);
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+  }
+  .screens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    max-width: 1100px;
+  }
+  .phone {
+    background: #111;
+    border-radius: 40px;
+    padding: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    width: 220px;
+    flex-shrink: 0;
+  }
+  .screen {
+    border-radius: 30px;
+    overflow: hidden;
+    aspect-ratio: 9/19;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .label {
+    color: white;
+    text-align: center;
+    font-size: 0.85rem;
+    margin-top: 14px;
+    font-weight: bold;
+    opacity: 0.9;
+  }
+
+  /* Splash */
+  .splash { background: linear-gradient(180deg, #87CEEB 0%, #B39DDB 100%); }
+  .splash-logo { font-size: 2.8rem; font-weight: 900; color: white; text-shadow: 0 3px 12px rgba(0,0,0,0.2); text-align: center; }
+  .splash-sub { color: rgba(255,255,255,0.8); font-size: 0.8rem; margin-top: 8px; }
+  .stars { position: absolute; width: 100%; height: 100%; pointer-events: none; }
+  .star { position: absolute; font-size: 1.2rem; animation: float 3s ease-in-out infinite; }
+  .star:nth-child(1) { top: 15%; left: 20%; animation-delay: 0s; }
+  .star:nth-child(2) { top: 25%; right: 15%; animation-delay: 0.5s; }
+  .star:nth-child(3) { bottom: 25%; left: 10%; animation-delay: 1s; }
+  .star:nth-child(4) { bottom: 15%; right: 20%; animation-delay: 1.5s; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+  /* Home */
+  .home { background: linear-gradient(180deg, #FFF9C4 0%, #E1F5FE 100%); }
+  .play-btn {
+    width: 110px; height: 110px; border-radius: 55px;
+    background: linear-gradient(135deg, #FFB300, #FF6F00);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(255,111,0,0.4);
+    animation: pulse 2s ease-in-out infinite;
+    cursor: pointer;
+  }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  .play-icon { font-size: 2.5rem; }
+  .play-text { color: white; font-weight: 900; font-size: 0.9rem; }
+  .floating-emoji { position: absolute; animation: float 4s ease-in-out infinite; font-size: 1.4rem; }
+  .fe1 { top: 12%; left: 15%; animation-delay: 0s; }
+  .fe2 { top: 20%; right: 12%; animation-delay: 0.8s; }
+  .fe3 { bottom: 30%; left: 8%; animation-delay: 1.4s; }
+  .fe4 { bottom: 20%; right: 10%; animation-delay: 2s; }
+  .lock-icon { position: absolute; bottom: 16px; right: 20px; font-size: 1.1rem; opacity: 0.4; }
+
+  /* Camera */
+  .camera { background: #1a1a2e; }
+  .cam-feed {
+    width: 100%; aspect-ratio: 9/14; background: linear-gradient(180deg, #2a2a3e 0%, #1a1a2e 100%);
+    display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0;
+    border-bottom: 2px solid #333;
+  }
+  .face-outline {
+    width: 85px; height: 100px; border: 2px dashed rgba(255,255,255,0.3);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 3rem;
+  }
+  .filter-strip {
+    display: flex; gap: 8px; padding: 8px; overflow: hidden; background: rgba(0,0,0,0.4);
+    width: 100%; justify-content: center;
+  }
+  .filter-chip {
+    width: 36px; height: 36px; border-radius: 18px; background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+    border: 2px solid transparent; flex-shrink: 0;
+  }
+  .filter-chip.active { border-color: white; background: rgba(255,255,255,0.2); }
+  .capture-area {
+    display: flex; align-items: center; justify-content: center; padding: 10px;
+    background: rgba(0,0,0,0.6); width: 100%;
+  }
+  .capture-btn {
+    width: 52px; height: 52px; border-radius: 26px;
+    border: 3px solid white; background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+  }
+  .back-btn { position: absolute; top: 10px; left: 10px; color: white; font-size: 1.2rem; }
+  .sound-btn { position: absolute; top: 10px; right: 10px; color: white; font-size: 1.2rem; }
+
+  /* Photo Taken */
+  .photo { background: #1a1a2e; }
+  .photo-preview {
+    width: 100%; aspect-ratio: 9/14; background: linear-gradient(180deg, #3a1a5e 0%, #1a1a2e 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; flex-shrink: 0;
+  }
+  .awesome-text {
+    font-size: 1.4rem; font-weight: 900; color: #FFD700;
+    text-shadow: 0 0 20px rgba(255,215,0,0.5); animation: pulse 1.5s ease-in-out infinite;
+  }
+  .confetti { position: absolute; font-size: 1.2rem; animation: float 2s ease-in-out infinite; }
+  .c1 { top: 20%; left: 20%; } .c2 { top: 15%; right: 15%; }
+  .c3 { top: 35%; left: 10%; animation-delay: 0.3s; } .c4 { top: 30%; right: 10%; animation-delay: 0.6s; }
+  .photo-btns {
+    display: flex; gap: 8px; padding: 10px; background: rgba(0,0,0,0.6); width: 100%; justify-content: center;
+  }
+  .photo-btn {
+    padding: 8px 14px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;
+    border: none; cursor: pointer;
+  }
+  .btn-primary { background: #FFB300; color: #333; }
+  .btn-secondary { background: rgba(255,255,255,0.15); color: white; }
+
+  /* Parent Gate */
+  .gate { background: linear-gradient(180deg, #E8F5E9 0%, #C8E6C9 100%); }
+  .gate-icon { font-size: 2.5rem; margin-bottom: 8px; }
+  .gate-title { font-weight: 900; color: #2E7D32; font-size: 1rem; margin-bottom: 16px; }
+  .gate-question { font-size: 1.6rem; font-weight: 900; color: #1B5E20; margin-bottom: 12px; }
+  .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; width: 80%; }
+  .num-btn {
+    aspect-ratio: 1; border-radius: 50%; background: white;
+    border: 2px solid #A5D6A7; font-size: 1.1rem; font-weight: bold;
+    color: #2E7D32; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .num-btn.wide { border-radius: 20px; aspect-ratio: auto; padding: 10px; }
+  .gate-input {
+    background: white; border: 2px solid #81C784; border-radius: 12px;
+    padding: 8px 20px; font-size: 1.5rem; font-weight: 900; color: #1B5E20;
+    margin-bottom: 12px; min-width: 60px; text-align: center;
+  }
+
+  /* Info cards */
+  .info-section { max-width: 900px; width: 100%; margin: 50px 0; }
+  .info-grid { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .info-card {
+    background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 20px; flex: 1; min-width: 200px; max-width: 260px;
+    color: white; text-align: center;
+  }
+  .info-card .icon { font-size: 2rem; margin-bottom: 8px; }
+  .info-card h3 { font-size: 1rem; margin-bottom: 6px; }
+  .info-card p { font-size: 0.8rem; opacity: 0.85; line-height: 1.5; }
+  .tech-badge {
+    display: inline-block; background: rgba(255,255,255,0.2); border-radius: 20px;
+    padding: 4px 12px; font-size: 0.75rem; color: white; margin: 3px;
+  }
+  .footer { color: rgba(255,255,255,0.6); text-align: center; font-size: 0.8rem; margin: 20px 0 40px; }
+  a { color: rgba(255,255,255,0.9); }
+</style>
+</head>
+<body>
+
+<h1>📸 KidCam Fun</h1>
+<p class="tagline">A toy, not an app. Safe by design. Ages 4–10.</p>
+
+<div class="screens">
+
+  <!-- Splash Screen -->
+  <div>
+    <div class="phone">
+      <div class="screen splash">
+        <div class="stars">
+          <div class="star">⭐</div><div class="star">✨</div>
+          <div class="star">🌟</div><div class="star">💫</div>
+        </div>
+        <div class="splash-logo">📸<br>KidCam<br>Fun</div>
+        <div class="splash-sub">Loading magic...</div>
+      </div>
+    </div>
+    <div class="label">Splash Screen</div>
+  </div>
+
+  <!-- Home Screen -->
+  <div>
+    <div class="phone">
+      <div class="screen home">
+        <div class="floating-emoji fe1">🌟</div>
+        <div class="floating-emoji fe2">🎈</div>
+        <div class="floating-emoji fe3">🦋</div>
+        <div class="floating-emoji fe4">🌈</div>
+        <div class="play-btn">
+          <div class="play-icon">📷</div>
+          <div class="play-text">PLAY!</div>
+        </div>
+        <div class="lock-icon">🔒</div>
+      </div>
+    </div>
+    <div class="label">Home Screen</div>
+  </div>
+
+  <!-- Camera Screen -->
+  <div>
+    <div class="phone">
+      <div class="screen camera" style="justify-content:flex-start;">
+        <div class="cam-feed">
+          <div class="back-btn">←</div>
+          <div class="sound-btn">🎵</div>
+          <div class="face-outline">🐱</div>
+        </div>
+        <div class="filter-strip">
+          <div class="filter-chip">🐶</div>
+          <div class="filter-chip active">🐱</div>
+          <div class="filter-chip">🦕</div>
+          <div class="filter-chip">👑</div>
+          <div class="filter-chip">🦸</div>
+        </div>
+        <div class="capture-area">
+          <div class="capture-btn">📷</div>
+        </div>
+      </div>
+    </div>
+    <div class="label">Camera + Filters</div>
+  </div>
+
+  <!-- Photo Taken -->
+  <div>
+    <div class="phone">
+      <div class="screen photo" style="justify-content:flex-start;">
+        <div class="photo-preview">
+          <div class="confetti c1">⭐</div><div class="confetti c2">🎉</div>
+          <div class="confetti c3">✨</div><div class="confetti c4">🌟</div>
+          <div style="font-size:3rem">🐱</div>
+          <div class="awesome-text">Awesome! 🎉</div>
+        </div>
+        <div class="photo-btns">
+          <button class="photo-btn btn-primary">▶ Keep Playing</button>
+          <button class="photo-btn btn-secondary">💾 Save</button>
+        </div>
+      </div>
+    </div>
+    <div class="label">Photo Taken!</div>
+  </div>
+
+  <!-- Parent Gate -->
+  <div>
+    <div class="phone">
+      <div class="screen gate">
+        <div class="gate-icon">🔒</div>
+        <div class="gate-title">Parent Area</div>
+        <div class="gate-question">3 + 4 = ?</div>
+        <div class="gate-input">_</div>
+        <div class="numpad">
+          <div class="num-btn">1</div><div class="num-btn">2</div><div class="num-btn">3</div>
+          <div class="num-btn">4</div><div class="num-btn">5</div><div class="num-btn">6</div>
+          <div class="num-btn">7</div><div class="num-btn">8</div><div class="num-btn">9</div>
+          <div class="num-btn">⌫</div><div class="num-btn">0</div><div class="num-btn">✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="label">Parent Gate</div>
+  </div>
+
+</div>
+
+<!-- Feature cards -->
+<div class="info-section">
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon">🛡️</div>
+      <h3>Safe by Design</h3>
+      <p>Zero network calls. No accounts. No cloud. No share button. Everything stays on the device.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">🎭</div>
+      <h3>10 Fun Filters</h3>
+      <p>Cat, dog, dino, princess, superhero, pirate, space, monster, rainbow, snowflake — more in Phase 2.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">🔒</div>
+      <h3>Parent Gate</h3>
+      <p>Math challenge protects settings, photo export, and purchases. Kid can't bypass it.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">⚡</div>
+      <h3>On-Device AI</h3>
+      <p>Google ML Kit face detection — no API key, no server, runs fully offline at 30fps.</p>
+    </div>
+  </div>
+  <br>
+  <div style="text-align:center;">
+    <span class="tech-badge">Flutter 3.27</span>
+    <span class="tech-badge">Dart</span>
+    <span class="tech-badge">Google ML Kit</span>
+    <span class="tech-badge">Riverpod 2</span>
+    <span class="tech-badge">SQLite</span>
+    <span class="tech-badge">iOS + Android</span>
+  </div>
+</div>
+
+<div class="footer">
+  <a href="https://github.com/gyeningcorp/kidcam-fun">GitHub Repo</a> &nbsp;·&nbsp;
+  Built by Rory for Chris · March 2026
+</div>
+
+</body>
+</html>
